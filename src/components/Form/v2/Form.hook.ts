@@ -265,7 +265,7 @@ export function areAllQuestionsAnswered(
           case "select":
           case "radio":
           case "file":
-            if (!answers[question.id]) return question.optional;
+            if (!answers[question.id]) return !!question.optional;
             const validationResult = isValidated(
               ans(question),
               !!question.optional,
