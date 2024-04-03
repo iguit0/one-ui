@@ -1,5 +1,8 @@
 import { useLayoutEffect, useMemo, useState } from "react";
-import { useOneUIConfig } from "../../../context/OneUIProvider";
+import {
+  OneUIContextSpecs,
+  useOneUIConfig,
+} from "../../../context/OneUIProvider";
 import {
   AnswerAction,
   AnswerByField,
@@ -10,25 +13,34 @@ import {
 import { AnswersMap } from "./Form.types";
 import { UploadTask, UploadTaskSnapshot } from "firebase/storage";
 
-export function useForm(
-  currentQuestions: FormFieldView[],
-  defaultAnswers: AnswersMap,
+export function useFormAnswers<A extends AnswersMap = AnswersMap>(
+  defaultAnswers: A,
   mode: FormMode
 ) {
-  const formConfig = useOneUIConfig("component.form");
-  const [answers, setAnswers] = useState<AnswersMap>(() => {
+  const [answers, setAnswers] = useState<A>(() => {
     const clone = {
       ...defaultAnswers,
     };
     if (mode === FormMode.READ_ONLY) return clone;
     return clone;
   });
+  return {
+    answers,
+    setAnswers,
+  };
+}
+export function useFormState(
+  currentQuestions: FormFieldView[],
+  { answers, setAnswers }: ReturnType<typeof useFormAnswers>
+) {
+  const formConfig = useOneUIConfig("component.form");
 
   const { isValid: isQuestionsAnswered } = useMemo(() => {
     return areAllQuestionsAnswered(
       currentQuestions,
       answers,
-      formConfig.requiredLabel
+      formConfig.requiredLabel,
+      formConfig.extensions
     );
   }, [answers, currentQuestions]);
 
@@ -72,6 +84,15 @@ export function useForm(
     onAnswerAction,
     questions: currentQuestions,
   };
+}
+
+export function useForm(
+  currentQuestions: FormFieldView[],
+  defaultAnswers: AnswersMap,
+  mode: FormMode
+) {
+  const answers = useFormAnswers(defaultAnswers, mode);
+  return useFormState(currentQuestions, answers);
 }
 
 function useFileUploads(questions: FormField[], answers: AnswersMap) {
@@ -133,7 +154,7 @@ export function useFieldErrors<
     Pick<FormField, "type" | "id" | "optional" | "validator">[]
   >
 >(currentQuestions: Q, answers: AnswersMap, showAllErrors: boolean) {
-  const { requiredLabel } = useOneUIConfig("component.form");
+  const { requiredLabel, extensions } = useOneUIConfig("component.form");
   const errorMap = useMemo(() => {
     const ans = <T extends FormFieldView["type"]>(
       question: Pick<FormField, "id"> & {
@@ -174,6 +195,19 @@ export function useFieldErrors<
           const validationResult = _isValidated();
           if (validationResult.error)
             errorsMap[question.id] = validationResult.error;
+        default:
+          const extendedSupport =
+            extensions?.[
+              question.type as OnepercentUtility.UIElements.FormExtension["fields"]["type"]
+            ];
+          if (extendedSupport) {
+            const validationResultExtend = extendedSupport.validator(
+              ans(question) as any,
+              question as any
+            );
+            if (validationResultExtend.error)
+              errorsMap[question.id] = validationResultExtend.error;
+          }
       }
     }
 
@@ -196,7 +230,8 @@ export function useFieldErrors<
 export function areAllQuestionsAnswered(
   currentQuestions: FormField[],
   answers: AnswersMap,
-  requiredLabel: string
+  requiredLabel: string,
+  extensions: OneUIContextSpecs["component"]["form"]["extensions"]
 ) {
   const isValid = currentQuestions.reduce((answeredAll, question) => {
     const ans = <T extends FormFieldView["type"]>(
@@ -230,7 +265,7 @@ export function areAllQuestionsAnswered(
           case "select":
           case "radio":
           case "file":
-            if (!answers[question.id]) return false;
+            if (!answers[question.id]) return question.optional;
             const validationResult = isValidated(
               ans(question),
               !!question.optional,
@@ -239,9 +274,20 @@ export function areAllQuestionsAnswered(
             );
             return validationResult.isValid && answeredAll;
           default:
-            return question.validator
-              ? !!question.validator(ans(question))
-              : !!ans(question);
+            const extendedSupport =
+              extensions?.[
+                question.type as OnepercentUtility.UIElements.FormExtension["fields"]["type"]
+              ];
+            if (extendedSupport) {
+              const validationResultExtend = extendedSupport.validator(
+                ans(question) as any,
+                question as any
+              );
+              return validationResultExtend.isValid;
+            } else
+              return question.validator
+                ? !!question.validator(ans(question))
+                : !!ans(question);
         }
       })();
     return result;

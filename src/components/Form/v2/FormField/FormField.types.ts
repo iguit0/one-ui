@@ -60,7 +60,7 @@ export type BasicFormFields =
     };
 
 export type FormField = {
-  optional?: true;
+  optional?: boolean;
   id: string;
   validator?: (val: AnswerAction<FormField> | undefined) => boolean | string;
 } & (

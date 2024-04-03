@@ -16,6 +16,7 @@ import {
   GenericFormFieldProps,
 } from "../components/Form/v2/FormField/FormField.types";
 import { UploadTask } from "firebase/storage";
+import { BaseQuestion } from "../components/Form/v2/Form.types";
 
 type DeepPartial<T> = {
   [P in keyof T]?: NonNullable<T[P]> extends Function
@@ -47,7 +48,13 @@ export type OneUIContextSpecs = {
       extensions?: {
         [K in OnepercentUtility.UIElements.FormExtension["fields"]["type"]]: {
           Input: (props: GenericFormFieldProps<K>) => ReactElement;
-          validator: (answer: AnswerByField<{ type: K }>) => {
+          validator: (
+            answer: AnswerByField<{ type: K }>,
+            question: BaseQuestion &
+              (OnepercentUtility.UIElements.FormExtension["fields"] & {
+                type: K;
+              })
+          ) => {
             isValid: boolean;
             error?: string;
           };
