@@ -176,12 +176,14 @@ export function useFieldErrors<
           requiredLabel
         );
       };
-
-      const validation = _isValidated();
-      errorsMap[question.id] = validation.error;
+      const updateDefaultError = () => {
+        const validation = _isValidated();
+        errorsMap[question.id] = validation.error;
+      };
       switch (question.type) {
         case "check":
         case "rawcheck":
+          updateDefaultError();
           if (question.validator)
             errorsMap[question.id] = question.validator(
               ans(question) as any
@@ -192,9 +194,11 @@ export function useFieldErrors<
         case "select":
         case "radio":
         case "file":
+          updateDefaultError();
           const validationResult = _isValidated();
           if (validationResult.error)
             errorsMap[question.id] = validationResult.error;
+          break;
         default:
           const extendedSupport =
             extensions?.[
@@ -207,6 +211,8 @@ export function useFieldErrors<
             );
             if (validationResultExtend.error)
               errorsMap[question.id] = validationResultExtend.error;
+          } else {
+            updateDefaultError();
           }
       }
     }

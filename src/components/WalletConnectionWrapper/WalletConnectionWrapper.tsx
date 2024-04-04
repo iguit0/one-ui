@@ -170,7 +170,7 @@ function Content({
             ],
           });
         default:
-          throw e
+          throw e;
       }
     }
   }
