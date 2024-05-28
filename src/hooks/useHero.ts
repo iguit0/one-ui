@@ -35,11 +35,15 @@ function triggerDynamicComponents(
   );
 
   for (let elementThatIsBeingRemoved of removedElements) {
-    elementThatIsBeingRemoved.style.height = `${elementThatIsBeingRemoved.clientHeight}px`;
+    for (let heightKey of ["height", "minHeight", "maxHeight"] as const)
+      elementThatIsBeingRemoved.style[
+        heightKey
+      ] = `${elementThatIsBeingRemoved.clientHeight}px`;
   }
   setTimeout(() => {
     for (let elementThatIsBeingRemoved of removedElements) {
-      elementThatIsBeingRemoved.style.height = `0px`;
+      for (let heightKey of ["height", "minHeight", "maxHeight"] as const)
+        elementThatIsBeingRemoved.style[heightKey] = `0px`;
       elementThatIsBeingRemoved.style.opacity = `0`;
     }
   }, 0);
@@ -62,13 +66,6 @@ function triggerDynamicComponents(
           parentChilds.indexOf(fromElement) + 1
         })`;
 
-        if (
-          componentThatWillAppear.getAttribute(DATA_TAG_HERO_COMPONENT) ===
-          "7-insideDiv"
-        ) {
-          console.log(pathSuffix, fromElement, fromElement !== origin);
-        }
-
         if (fromElement !== origin)
           return recursiveBuildPath(
             parent,
@@ -86,7 +83,8 @@ function triggerDynamicComponents(
       const targetElementClone = componentThatWillAppear.cloneNode(
         true
       ) as HTMLDivElement;
-      targetElementClone.style.height = "0px";
+      for (let heightKey of ["height", "minHeight", "maxHeight"] as const)
+        targetElementClone.style[heightKey] = "0px";
       const shouldBeInsertedAtElement = whatIsTheElementPathFromCloneElement
         ? clone.querySelector(whatIsTheElementPathFromCloneElement)!
         : clone;
@@ -106,7 +104,10 @@ function triggerDynamicComponents(
           )
         );
       setTimeout(() => {
-        targetElementClone.style.height = `${componentThatWillAppear.clientHeight}px`;
+        for (let heightKey of ["height", "minHeight", "maxHeight"] as const)
+          targetElementClone.style[
+            heightKey
+          ] = `${componentThatWillAppear.clientHeight}px`;
       }, 0);
     }
   }
@@ -315,6 +316,11 @@ export default function useHero(
       heroRef.current!.style.visibility = "hidden";
       otherElement.style.visibility = "hidden";
 
+      for (let propToTransition of propsToTransition) {
+        clone.style[propToTransition as any] =
+          window.getComputedStyle(otherElement)[propToTransition as any];
+      }
+
       clone.style.transition = `${allPropsToTransition
         .map(
           (prop) =>
@@ -326,20 +332,18 @@ export default function useHero(
         .join(", ")}`;
 
       setTimeout(() => {
-        const el = heroRef.current;
+        const elItWillTransitionTo = heroRef.current;
         const cleanup = () => {
           if (events.onHeroEnd) events.onHeroEnd();
-          if (el) {
-            if (repeatable) el!.setAttribute(dataProperty, id);
-            el.style.visibility = "";
+          if (elItWillTransitionTo) {
+            if (repeatable)
+              elItWillTransitionTo!.setAttribute(dataProperty, id);
+            elItWillTransitionTo.style.visibility = "";
           }
           setTimeout(() => {
             clone.remove();
           }, 0);
         };
-        if (events.onHeroStart) {
-          events.onHeroStart(clone, otherElement, heroRef.current!);
-        }
         triggerDynamicComponents(
           clone,
           Array.from(
@@ -347,21 +351,26 @@ export default function useHero(
           ) as HTMLDivElement[],
           currentElement
         );
-        if (!el) {
+        if (events.onHeroStart) {
+          events.onHeroStart(clone, otherElement, heroRef.current!);
+        }
+        if (!elItWillTransitionTo) {
           cleanup();
           return;
         }
         /** Set the clone over the new position */
-        const willMove = setCloneToCoordinatesOf(el);
+        const willMove = setCloneToCoordinatesOf(elItWillTransitionTo);
         if (!willMove) cleanup();
         else {
           for (let propToTransition of propsToTransition)
             clone.style[propToTransition as any] =
-              window.getComputedStyle(el)[propToTransition as any];
+              window.getComputedStyle(elItWillTransitionTo)[
+                propToTransition as any
+              ];
           let initialOffset: number;
           const s = ({ target }: MouseEvent) => {
             const d = target as HTMLDivElement;
-            if (d.contains(el)) {
+            if (d.contains(elItWillTransitionTo)) {
               if (initialOffset === undefined) initialOffset = d.scrollTop;
               else
                 clone.style.marginTop = `${-(d.scrollTop - initialOffset)}px`;
