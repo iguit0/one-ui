@@ -256,7 +256,7 @@ function createConfig(
                 string: true,
                 documentUrl: `http://localhost/${i}.html`,
                 entry: relative(resolve("."), baseConfig.entry[i]),
-                maxParallelTasks: 1,
+                maxParallelTasks: baseConfig.maxParallelTasks || 3,
                 log: true
               })}!${htmlFilePath}`,
         inject: process.env.NODE_ENV === "development",
