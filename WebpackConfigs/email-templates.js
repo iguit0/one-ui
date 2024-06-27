@@ -24,7 +24,6 @@ const {
 const lodash = require("lodash");
 const { findPathDeep } = require("deepdash")(lodash);
 const chalk = require("chalk");
-const { createRequire } = require("module");
 
 function findAllStaticGeneration() {
   const glob = require("glob");
@@ -257,6 +256,8 @@ function createConfig(
                 string: true,
                 documentUrl: `http://localhost/${i}.html`,
                 entry: relative(resolve("."), baseConfig.entry[i]),
+                maxParallelTasks: 3,
+                log: true
               })}!${htmlFilePath}`,
         inject: process.env.NODE_ENV === "development",
         filename:
