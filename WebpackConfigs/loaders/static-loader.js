@@ -5,7 +5,7 @@ module.exports = function (content) {
     features: { inlineCSS },
   } = getOptions(this);
   content = content.replace("export default ", "");
-  const [_, functionName] = /function ([a-zA-Z]+)\(/.exec(content);
+  const [_, functionName] = /function ([a-zA-Z0-9]+)\(/.exec(content);
   content = `import { render } from 'react-dom';
 import React from 'react';
 import InlineCSS from "CSSInliner";
