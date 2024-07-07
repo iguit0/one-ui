@@ -126,17 +126,16 @@ function createConfig(
     inlineCSS: true,
     replaceCSSRules: true,
   },
-  outputDir = join(resolve("."), "templates")
+  outputDir = join(resolve("."), "templates"),
+  /** @type {boolean} */
+  resourcesOnly
 ) {
   if (!process.env.EMAIL_TEMPLATES_BASE_DOMAIN)
     throw new Error(
       `The env variable "EMAIL_TEMPLATES_BASE_DOMAIN" is not set (ex: https://localhost:3000). It's required for pointing to the image resources correctly`
     );
   if (!existsSync(outputDir)) mkdirSync(outputDir, { recursive: true });
-  const results = findAllStaticGeneration();
-  const entries = parseResultsrToEntries(results);
 
-  baseConfig.entry = entries;
   let resourcesPath = join(resolve("."), "build", "templates");
   if (process.env.NODE_ENV === "production") {
     const outputFolderFiles = readdirSync(outputDir);
@@ -230,7 +229,6 @@ function createConfig(
       },
     ],
   });
-  const entryKeys = Object.keys(baseConfig.entry);
   if (features.replaceCSSRules)
     baseConfig.module.rules.unshift({
       test: /\.svg$/,
@@ -244,42 +242,51 @@ function createConfig(
         },
       ],
     });
-  entryKeys.map((i) => {
-    const htmlEntries = [];
-    function HTMLPluginEntry(htmlFilePath, suffix) {
-      return new HTMLPlugin({
-        minify: false,
-        template:
-          process.env.NODE_ENV === "development"
-            ? htmlFilePath
-            : `!!${prerenderRequire()}?${JSON.stringify({
-                string: true,
-                documentUrl: `http://localhost/${i}.html`,
-                entry: relative(resolve("."), baseConfig.entry[i]),
-                maxParallelTasks: baseConfig.maxParallelTasks || 3,
-                log: true
-              })}!${htmlFilePath}`,
-        inject: process.env.NODE_ENV === "development",
-        filename:
-          process.env.NODE_ENV === "development"
-            ? `${i}${suffix}.html`
-            : `${relative(resourcesPath, outputDir)}/${i}${suffix}.html`,
-        excludeChunks: entryKeys
-          .filter((a) => a !== i)
-          .map((a) => {
-            return `${a}`;
-          }),
-        version: 5,
-      });
-    }
-    if (typeof mainHtml === "string")
-      htmlEntries.push(HTMLPluginEntry(mainHtml, ""));
-    else
-      for (let [htmlFilePath, subfileName] of mainHtml)
-        htmlEntries.push(HTMLPluginEntry(htmlFilePath, `/${subfileName}`));
 
-    baseConfig.plugins.push(...htmlEntries);
-  });
+  const results = findAllStaticGeneration();
+  if (resourcesOnly) {
+    baseConfig.entry = results;
+  } else {
+    const entries = parseResultsrToEntries(results);
+    baseConfig.entry = entries;
+    const entryKeys = Object.keys(baseConfig.entry);
+    entryKeys.map((i) => {
+      const htmlEntries = [];
+      function HTMLPluginEntry(htmlFilePath, suffix) {
+        return new HTMLPlugin({
+          minify: false,
+          template:
+            process.env.NODE_ENV === "development"
+              ? htmlFilePath
+              : `!!${prerenderRequire()}?${JSON.stringify({
+                  string: true,
+                  documentUrl: `http://localhost/${i}.html`,
+                  entry: relative(resolve("."), baseConfig.entry[i]),
+                  maxParallelTasks: baseConfig.maxParallelTasks || 3,
+                  log: true,
+                })}!${htmlFilePath}`,
+          inject: process.env.NODE_ENV === "development",
+          filename:
+            process.env.NODE_ENV === "development"
+              ? `${i}${suffix}.html`
+              : `${relative(resourcesPath, outputDir)}/${i}${suffix}.html`,
+          excludeChunks: entryKeys
+            .filter((a) => a !== i)
+            .map((a) => {
+              return `${a}`;
+            }),
+          version: 5,
+        });
+      }
+      if (typeof mainHtml === "string")
+        htmlEntries.push(HTMLPluginEntry(mainHtml, ""));
+      else
+        for (let [htmlFilePath, subfileName] of mainHtml)
+          htmlEntries.push(HTMLPluginEntry(htmlFilePath, `/${subfileName}`));
+
+      baseConfig.plugins.push(...htmlEntries);
+    });
+  }
 
   function replaceMiniCSSLoaders(rulesSet) {
     const allLoadersThatContainMiniCSS = rulesSet.filter((a) => {
@@ -352,8 +359,15 @@ module.exports = async function initEmailWebpack() {
     mainHtml,
     features,
     outputDir,
+    resourcesOnly,
   } = await loadGenerator();
-  const config = createConfig(baseConfig, mainHtml, features, outputDir);
+  const config = createConfig(
+    baseConfig,
+    mainHtml,
+    features,
+    outputDir,
+    resourcesOnly
+  );
   checkTemplatesCount(config.entry);
   return config;
 };
