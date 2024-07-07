@@ -15,6 +15,7 @@
     "@metamask/providers": "^9.1.0",
     "@muritavo/cypress-toolkit": "^0.8.0",
     "@muritavo/webpack-microfrontend-scripts": "^0.1.3",
+    "@nettoolkit/prerender-loader": "github:muritavo/prerender-loader#master",
     "@storybook/addon-actions": "^6.4.18",
     "@storybook/addon-essentials": "^6.4.18",
     "@storybook/addon-links": "^6.4.18",
@@ -87,7 +88,6 @@
     "identity-obj-proxy": "^3.0.0",
     "kill-port": "^2.0.0",
     "lodash": "^4.17.21",
-    "prerender-loader": "^1.3.0",
     "sharp": "^0.30.3",
     "webpack": "^5"
   },
