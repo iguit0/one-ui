@@ -1,10 +1,18 @@
 import { mount } from "cypress/react";
-import { MutableRefObject, RefObject, useCallback, useEffect } from "react";
+import {
+  MutableRefObject,
+  PropsWithChildren,
+  RefObject,
+  useCallback,
+  useEffect,
+} from "react";
 import useElementFit from "../../../src/hooks/useElementFit";
 import {
   useLocalPagination,
   useContainerPagination,
 } from "../../../src/hooks/usePagination";
+import { randomColor } from "../../utility/color";
+import useMergeRefs from "hooks/useMergeRefs";
 
 describe("Business rules", () => {
   describe("Paginating an scrollable element", () => {
@@ -86,16 +94,19 @@ describe("Business rules", () => {
     };
     const Wrapper = ({ localItems }: { localItems: any[] }) => {
       const { ref, itemsToShow } = useElementFit(180, 210);
-      const { items, getPage, getNextPage } = useLocalPagination(
-        localItems,
+      const { items, getPage, getNextPage } = useLocalPagination(localItems);
+      const cb = useCallback(() => {
+        getNextPage((itemsToShow || 0) * 2);
+      }, [getNextPage, itemsToShow]);
+      const { scrollableRef } = useContainerPagination(
+        cb,
         (itemsToShow || 0) * 2
       );
-      const { scrollableRef } = useContainerPagination(getNextPage);
 
       useEffect(() => {
         if (itemsToShow && localItems) {
           alert("Getting first page of items");
-          getPage(0);
+          getPage(0, (itemsToShow || 0) * 2);
         }
       }, [itemsToShow, localItems]);
 
@@ -155,6 +166,115 @@ describe("Business rules", () => {
         }
         cy.get("body").then((a) => cy.wrap(a.get(0).innerText).snapshot());
       }
+    });
+  });
+
+  describe("New way to organize pagination size", () => {
+    function expectedText(howManyElements: number) {
+      return new Array(howManyElements)
+        .fill(undefined)
+        .map((_, i) => String(i))
+        .join("");
+    }
+    const components = new Array(1000)
+      .fill(undefined)
+      .map((_, i) => <Square>{i}</Square>);
+    function Square({ children }: PropsWithChildren) {
+      const randColor = randomColor(Math.random().toString());
+      return (
+        <div style={{ width: 200, height: 500, backgroundColor: randColor }}>
+          {children}
+        </div>
+      );
+    }
+    function Cenario() {
+      const { itemsToShow: howManyItemsFit, ref } = useElementFit(200, 500);
+      const pagination = useLocalPagination(components);
+      const { scrollableRef } = useContainerPagination(
+        pagination.getNextPage,
+        (howManyItemsFit ?? 0) * 2
+      );
+
+      useEffect(() => {
+        if (howManyItemsFit) pagination.refreshCurrentPage(howManyItemsFit * 2);
+      }, [howManyItemsFit]);
+
+      const refs = useMergeRefs(scrollableRef, ref);
+
+      return (
+        <div
+          ref={refs}
+          data-testid="root"
+          style={{
+            width: "100vw",
+            height: "100vh",
+            overflow: "auto",
+            display: "flex",
+            flexWrap: "wrap",
+          }}
+        >
+          {pagination.items}
+        </div>
+      );
+    }
+    function hasElements(num: number) {
+      cy.byTestId("root")
+        .children()
+        .should("contain.text", expectedText(num))
+        .should("have.length", num);
+    }
+    function triggerScroll() {
+      cy.wait(500)
+        .byTestId("root")
+        .then((el) => {
+          cy.byTestId("root").scrollTo(0, el.get(0).scrollHeight - 100, {
+            duration: 200,
+          });
+        });
+    }
+    it("Should be able to simple pagination", () => {
+      cy.viewport(1000, 1000);
+      cy.mount(<Cenario />);
+
+      hasElements(20);
+      triggerScroll();
+      hasElements(40);
+      triggerScroll();
+      hasElements(60);
+      triggerScroll();
+      hasElements(80);
+      triggerScroll();
+      hasElements(100);
+    });
+
+    it("Should be able to paginate when the view changes size", () => {
+      /** Here we can fit 10 elements per screen */
+      cy.viewport(1000, 1000);
+      cy.mount(<Cenario />);
+
+      /** Should request 20 items (The dev measures 10 items X 2 to keep a hidden page) */
+      hasElements(20);
+      expectedText(20);
+
+      /** Now we can only keep 3 */
+      cy.viewport(600, 500).wait(500);
+      /**
+       * It should keep all the 20 items and add 4
+       * because when we change the page size, we already have 20 items, but each page contain 6
+       * so the total of items should be multiple of 6 to fit the available dimensions correctly
+       * 
+       * page 0 = 6
+       * page 1 = 12
+       * page 2 = 18
+       * page 3 = 24
+       * */
+      hasElements(24);
+      triggerScroll();
+      hasElements(30);
+      triggerScroll();
+      hasElements(36);
+      triggerScroll();
+      hasElements(42);
     });
   });
 });

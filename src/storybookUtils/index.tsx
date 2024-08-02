@@ -7,7 +7,6 @@ export function extractAllPossibilitiesFromEnumProp<
   K extends keyof P,
   P extends ComponentProps<C> = ComponentProps<C>
 >(component: C, propName: K): P[K][] {
-  console.log(component, _Text, component === _Text);
   if (component === _Text)
     (_Text as any).__docgenInfo.props[propName] = {
       type: {

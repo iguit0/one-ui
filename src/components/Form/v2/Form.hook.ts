@@ -13,7 +13,7 @@ import {
 import { AnswersMap } from "./Form.types";
 import { UploadTask, UploadTaskSnapshot } from "firebase/storage";
 
-export function useFormAnswers<A extends AnswersMap = AnswersMap>(
+export function useFormAnswers<A extends AnswersMap<any> = AnswersMap>(
   defaultAnswers: A,
   mode: FormMode
 ) {

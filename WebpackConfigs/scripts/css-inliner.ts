@@ -23,8 +23,6 @@ export default function inlineCSS() {
   allEls.forEach((el) => {
     const styles = window.getComputedStyle(el);
 
-    if (el.getAttribute("data-debug")) console.log(styles);
-
     const inlined = Array.from(styles)
       .map((k) => `${k}: ${styles.getPropertyValue(k)}`)
       .join("; ")

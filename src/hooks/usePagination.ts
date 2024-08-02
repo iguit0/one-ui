@@ -11,14 +11,19 @@ import throttle from "lodash/throttle";
 
 type UpdateEvent<I extends any> = {
   finished: boolean;
-  items: I;
+  items: I[];
   totalItems: number;
 };
 
 export default function usePagination<I extends any, A extends any[]>(
-  request: (page: number, currItems?: I, ...args: A) => Promise<UpdateEvent<I>>,
+  request: (
+    page: number,
+    pageSize: number | "all",
+    currItems?: I[],
+    ...args: A
+  ) => Promise<UpdateEvent<I>>,
   paginationId: (...args: A) => string = () => "default",
-  startingItems?: I
+  startingItems?: I[]
 ): Paginable<I, A> {
   const paginationDataRef = useRef<{
     [d: string]:
@@ -31,25 +36,36 @@ export default function usePagination<I extends any, A extends any[]>(
   const { current: paginationData } = paginationDataRef;
 
   const [items, setItems] = useState<
-    [paginationId: string, items: I, currentPage: number] | undefined
+    [paginationId: string, items: I[]] | undefined
   >(() => {
-    if (startingItems) return [(paginationId as any)(), startingItems, 0];
+    if (startingItems) return [(paginationId as any)(), startingItems];
     else return undefined;
   });
   const { process, ...control } = useAsyncControl();
 
   function updateItems(cb: (prevItems?: I) => UpdateEvent<I>["items"]) {
-    setItems((prev) => [prev![0], cb(), prev![2]]);
+    setItems((prev) => [prev![0], cb()]);
   }
 
+  const derivateCurrentPage = (pageSize: number) => {
+    if (items === undefined) return 0;
+    const currentPage = Math.ceil((items?.[1].length ?? 0) / pageSize) - 1;
+    return currentPage;
+  };
+
   const _requestPage = useCallback(
-    function (page: number, ...args: A) {
+    function (page: number, pageSize: number | "all", ...args: A) {
       const id = paginationId(...args);
       process(async () => {
         if (paginationData[id]?.finished) return;
         const result = await request(
           page,
-          items?.[0] === id && page !== 0 ? items?.[1] : undefined,
+          pageSize,
+          items?.[0] === id && page !== 0
+            ? pageSize === "all"
+              ? undefined
+              : items?.[1].slice(0, page * pageSize)
+            : undefined,
           ...args
         );
         paginationData[id] = {
@@ -57,8 +73,8 @@ export default function usePagination<I extends any, A extends any[]>(
           totalItems: result.totalItems,
         };
         setItems((prev) => {
-          if (page === 0) return [id, result.items, page];
-          else if (!prev || id === prev[0]) return [id, result.items, page];
+          if (page === 0) return [id, result.items];
+          else if (!prev || id === prev[0]) return [id, result.items];
           return prev;
         });
       });
@@ -68,10 +84,16 @@ export default function usePagination<I extends any, A extends any[]>(
 
   return {
     updateItems,
-    getNextPage: (...args: A) => {
-      _requestPage((items?.[2] || 0) + 1, ...args);
+    getNextPage: (pageSize: number, ...args: A) => {
+      _requestPage(derivateCurrentPage(pageSize) + 1, pageSize, ...args);
     },
     getPage: _requestPage,
+    getAll: (...args: A) => {
+      _requestPage(0, "all", ...args);
+    },
+    refreshCurrentPage: (pageSize: number, ...args: A) => {
+      _requestPage(derivateCurrentPage(pageSize), pageSize, ...args);
+    },
     totalItems: (...args) => paginationData[paginationId(...args)]?.totalItems,
     loading: control.loading,
     error: control.error,
@@ -86,12 +108,14 @@ export type Paginable<
   E extends any = any
 > = {
   updateItems: (cb: (prevItems?: I) => UpdateEvent<I>["items"]) => void;
-  getNextPage: (...args: A) => void;
-  getPage: (page: number, ...args: A) => void;
+  getNextPage: (pageSize: number, ...args: A) => void;
+  refreshCurrentPage: (pageSize: number, ...args: A) => void;
+  getPage: (page: number, pageSize: number, ...args: A) => void;
+  getAll: (...args: A) => void;
   totalItems: (...args: A) => number | undefined;
   loading: boolean;
   error: E | Error | undefined;
-  items: I | undefined;
+  items: I[] | undefined;
   setError: ReturnType<typeof useAsyncControl>["setError"];
 };
 
@@ -107,7 +131,8 @@ export type LocalPaginable<
  * This returns a ref to be bound to an elements so it can be able to detect when a pagination whould occur
  */
 export function useContainerPagination(
-  cb: () => void,
+  cb: (pageSize: number) => void,
+  pageSize: number,
   direction: "h" | "v" = "v"
 ) {
   const scrollableRef = useRef<HTMLDivElement>(null);
@@ -135,7 +160,7 @@ export function useContainerPagination(
             ? scrollElement.clientHeight + scrollElement.scrollTop
             : scrollElement.clientWidth + scrollElement.scrollLeft;
         if (offset >= offsetLimit) {
-          cb();
+          cb(pageSize);
         }
       },
       250,
@@ -149,7 +174,7 @@ export function useContainerPagination(
       passive: true,
     });
     return () => el.removeEventListener("scroll", calculateIfReachedLimit);
-  }, [cb]);
+  }, [cb, pageSize]);
 
   return {
     scrollableRef,
@@ -160,13 +185,10 @@ export function useContainerPagination(
 /**
  * This function receives an amount of local instances and paginates it
  */
-export function useLocalPagination<L>(
-  items: L[] | undefined,
-  pageSize: number
-) {
+export function useLocalPagination<L>(items: L[] | undefined) {
   const instanceID = useMemo(() => Date.now(), [items]);
   const cb = useCallback(
-    (page: number, currItems: L[] = []) => {
+    (page: number, pageSize: number, currItems: L[] = []) => {
       if (!items)
         return Promise.resolve({
           finished: false,
@@ -182,13 +204,9 @@ export function useLocalPagination<L>(
         items: newArray,
       });
     },
-    [pageSize, items]
+    [items]
   );
-  const pagination = usePagination<L[], []>(
-    cb,
-    () => `${instanceID}`,
-    items?.slice(0, pageSize)
-  );
+  const pagination = usePagination<L, []>(cb, () => `${instanceID}`);
   const pagSrc = useMemo(() => items, [pagination.items]);
 
   return {

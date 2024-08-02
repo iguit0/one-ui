@@ -19771,21 +19771,19 @@ react-dev-utils@^12.0.1:
     strip-ansi "^6.0.1"
     text-table "^0.2.0"
 
-react-docgen-typescript-plugin@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/react-docgen-typescript-plugin/-/react-docgen-typescript-plugin-1.0.1.tgz#68383f567f09c42fe4a30e9d1168d6cdaa76664e"
-  integrity sha512-ifcKA71E1W+OdsQ6Z7EwJhGtBIbVHemivFyySAYMEbLzcMw4rDA8QHNoYOI++Hq1Ai8GzSeYtz+UXpmB3H8ZMQ==
+react-docgen-typescript-plugin@^1.0.8:
+  version "1.0.8"
+  resolved "https://registry.yarnpkg.com/react-docgen-typescript-plugin/-/react-docgen-typescript-plugin-1.0.8.tgz#58f039b3063c34c7cd394fe53b75e6d79feafee6"
+  integrity sha512-r+dUkpm/dmiVvvrfOTYbbg0g7bmaeXTodQFIru8ZzCx/HNUAUNSmh1C0seXzDSLqDSXm5EiOAiJZVs4gqAZqzA==
   dependencies:
     debug "^4.1.1"
-    endent "^2.0.1"
     find-cache-dir "^3.3.1"
     flat-cache "^3.0.4"
     micromatch "^4.0.2"
-    react-docgen-typescript "^1.22.0"
-    tslib "^2.0.0"
-    webpack-sources "^2.2.0"
+    react-docgen-typescript "^2.2.2"
+    tslib "^2.6.2"
 
-react-docgen-typescript@^1.22.0, react-docgen-typescript@^2, react-docgen-typescript@^2.1.1, react-docgen-typescript@^2.2.2:
+react-docgen-typescript@^2, react-docgen-typescript@^2.1.1, react-docgen-typescript@^2.2.2:
   version "2.2.2"
   resolved "https://registry.yarnpkg.com/react-docgen-typescript/-/react-docgen-typescript-2.2.2.tgz#4611055e569edc071204aadb20e1c93e1ab1659c"
   integrity sha512-tvg2ZtOpOi6QDwsb3GZhOjDkkX0h8Z2gipvTg6OVMUyoYoURhEiRNePT8NZItTVCDh39JJHnLdfCOkzoLbFnTg==
@@ -22602,6 +22600,11 @@ tslib@^2.0.0, tslib@^2.0.1, tslib@^2.0.3, tslib@^2.1.0, tslib@^2.4.0, tslib@~2.4
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.4.0.tgz#7cecaa7f073ce680a05847aa77be941098f36dc3"
   integrity sha512-d6xOpEDfsi2CZVlPQzGeux8XMwLT9hssAsaPYExaQMuYskwb+x1x7J371tWlbBdWHroy99KnVB6qIkUbs5X3UQ==
+
+tslib@^2.6.2:
+  version "2.6.3"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.6.3.tgz#0438f810ad7a9edcde7a241c3d80db693c8cbfe0"
+  integrity sha512-xNvxJEOUiWPGhUuUdQgAJPKOOJfGnIyKySOc09XkKsgdUV/3E2zvwZYdejjmRgPCgcym1juLH3226yA7sEFJKQ==
 
 tsutils@^3.21.0:
   version "3.21.0"
