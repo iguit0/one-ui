@@ -188,13 +188,14 @@ export function useContainerPagination(
 export function useLocalPagination<L>(items: L[] | undefined) {
   const instanceID = useMemo(() => Date.now(), [items]);
   const cb = useCallback(
-    (page: number, pageSize: number, currItems: L[] = []) => {
+    (page: number, pageSize: number | "all", currItems: L[] = []) => {
       if (!items)
         return Promise.resolve({
           finished: false,
           totalItems: 0,
           items: [],
         });
+      if (pageSize === "all") pageSize = items.length;
       const from = pageSize * page;
       const newArray = [...currItems, ...items.slice(from, from + pageSize)];
 
