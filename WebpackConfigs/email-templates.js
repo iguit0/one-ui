@@ -119,7 +119,7 @@ function prerenderRequire() {
   }
 }
 
-function createConfig(
+async function createConfig(
   baseConfig,
   mainHtml = join(__dirname, "templates", "index.html"),
   features = {
@@ -128,7 +128,11 @@ function createConfig(
   },
   outputDir = join(resolve("."), "templates"),
   /** @type {boolean} */
-  resourcesOnly
+  resourcesOnly,
+  /** @type {number} */
+  maxParallelTasks,
+  /** @type {() => Promise<string[]>} */
+  filterResults = async (results) => results
 ) {
   if (!process.env.EMAIL_TEMPLATES_BASE_DOMAIN)
     throw new Error(
@@ -243,7 +247,9 @@ function createConfig(
       ],
     });
 
-  const results = findAllStaticGeneration();
+  const allresults = findAllStaticGeneration();
+  const results = await filterResults(allresults);
+
   if (resourcesOnly) {
     baseConfig.entry = results;
   } else {
@@ -262,7 +268,7 @@ function createConfig(
                   string: true,
                   documentUrl: `http://localhost/${i}.html`,
                   entry: relative(resolve("."), baseConfig.entry[i]),
-                  maxParallelTasks: baseConfig.maxParallelTasks || 3,
+                  maxParallelTasks: maxParallelTasks ?? 3,
                   log: true,
                 })}!${htmlFilePath}`,
           inject: process.env.NODE_ENV === "development",
@@ -360,16 +366,21 @@ module.exports = async function initEmailWebpack() {
     features,
     outputDir,
     resourcesOnly,
+    maxParallelTasks,
+    templatesFilter,
   } = await loadGenerator();
-  const config = createConfig(
+  const config = await createConfig(
     baseConfig,
     mainHtml,
     features,
     outputDir,
-    resourcesOnly
+    resourcesOnly,
+    maxParallelTasks,
+    templatesFilter
   );
   checkTemplatesCount(config.entry);
   return config;
 };
 
 module.exports.checkTemplatesCount = checkTemplatesCount;
+/** @typedef {{mainHtml: [htmlPath: string, htmlOutputFilename: string][], templatesFilter: (availableTemplates: string[]) => Promise<string[]>}} EmailGeneratorConfig  */
