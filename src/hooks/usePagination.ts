@@ -15,16 +15,15 @@ type UpdateEvent<I extends any> = {
   totalItems: number;
 };
 
-export default function usePagination<I extends any, A extends any[]>(
+export default function usePagination<I extends any>(
   request: (
     page: number,
     pageSize: number | "all",
-    currItems?: I[],
-    ...args: A
+    currItems?: I[]
   ) => Promise<UpdateEvent<I>>,
-  paginationId: (...args: A) => string = () => "default",
+  paginationId: object | any[] | (() => string) = () => "default",
   startingItems?: I[]
-): Paginable<I, A> {
+): Paginable<I> {
   const paginationDataRef = useRef<{
     [d: string]:
       | {
@@ -34,13 +33,27 @@ export default function usePagination<I extends any, A extends any[]>(
       | undefined;
   }>({});
   const { current: paginationData } = paginationDataRef;
+  const paginationIdFactory = useMemo(
+    () => {
+      if (typeof paginationId === "object") {
+        const randId = Math.random();
+        return () => randId.toString();
+      } else return paginationId;
+    },
+    Array.isArray(paginationId) ? paginationId : [paginationId]
+  );
 
-  const [items, setItems] = useState<
-    [paginationId: string, items: I[]] | undefined
-  >(() => {
-    if (startingItems) return [(paginationId as any)(), startingItems];
-    else return undefined;
-  });
+  const [items, setItems] =
+    useState<[paginationId: string, items: I[]] | undefined>();
+
+  const [id, setId] = useState(() => paginationIdFactory());
+
+  useEffect(() => {
+    setId(paginationIdFactory());
+    if (startingItems) setItems([paginationIdFactory(), startingItems]);
+    else setItems(undefined);
+  }, [paginationIdFactory()]);
+
   const { process, ...control } = useAsyncControl();
 
   function updateItems(cb: (prevItems?: I) => UpdateEvent<I>["items"]) {
@@ -54,8 +67,8 @@ export default function usePagination<I extends any, A extends any[]>(
   };
 
   const _requestPage = useCallback(
-    function (page: number, pageSize: number | "all", ...args: A) {
-      const id = paginationId(...args);
+    function (page: number, pageSize: number | "all") {
+      const id = paginationIdFactory();
       process(async () => {
         if (paginationData[id]?.finished) return;
         const result = await request(
@@ -65,8 +78,7 @@ export default function usePagination<I extends any, A extends any[]>(
             ? pageSize === "all"
               ? undefined
               : items?.[1].slice(0, page * pageSize)
-            : undefined,
-          ...args
+            : undefined
         );
         paginationData[id] = {
           finished: result.finished,
@@ -84,17 +96,18 @@ export default function usePagination<I extends any, A extends any[]>(
 
   return {
     updateItems,
-    getNextPage: (pageSize: number, ...args: A) => {
-      _requestPage(derivateCurrentPage(pageSize) + 1, pageSize, ...args);
+    getNextPage: (pageSize: number) => {
+      _requestPage(derivateCurrentPage(pageSize) + 1, pageSize);
     },
     getPage: _requestPage,
-    getAll: (...args: A) => {
-      _requestPage(0, "all", ...args);
+    getAll: () => {
+      _requestPage(0, "all");
     },
-    refreshCurrentPage: (pageSize: number, ...args: A) => {
-      _requestPage(derivateCurrentPage(pageSize), pageSize, ...args);
+    refreshCurrentPage: (pageSize: number) => {
+      _requestPage(derivateCurrentPage(pageSize), pageSize);
     },
-    totalItems: (...args) => paginationData[paginationId(...args)]?.totalItems,
+    totalItems: () => paginationData[paginationIdFactory()]?.totalItems,
+    id: () => id,
     loading: control.loading,
     error: control.error,
     items: items?.[1],
@@ -102,28 +115,24 @@ export default function usePagination<I extends any, A extends any[]>(
   };
 }
 
-export type Paginable<
-  I extends any,
-  A extends any[] = [],
-  E extends any = any
-> = {
+export type Paginable<I extends any, E extends any = any> = {
   updateItems: (cb: (prevItems?: I) => UpdateEvent<I>["items"]) => void;
-  getNextPage: (pageSize: number, ...args: A) => void;
-  refreshCurrentPage: (pageSize: number, ...args: A) => void;
-  getPage: (page: number, pageSize: number, ...args: A) => void;
-  getAll: (...args: A) => void;
-  totalItems: (...args: A) => number | undefined;
+  getNextPage: (pageSize: number) => void;
+  refreshCurrentPage: (pageSize: number) => void;
+  getPage: (page: number, pageSize: number) => void;
+  getAll: () => void;
+  totalItems: () => number | undefined;
   loading: boolean;
   error: E | Error | undefined;
   items: I[] | undefined;
   setError: ReturnType<typeof useAsyncControl>["setError"];
+  id: () => string;
 };
 
-export type LocalPaginable<
-  I extends any,
-  A extends any[] = [],
-  E extends any = any
-> = Paginable<I, A, E> & {
+export type LocalPaginable<I extends any, E extends any = any> = Paginable<
+  I,
+  E
+> & {
   src: I;
 };
 
@@ -207,7 +216,7 @@ export function useLocalPagination<L>(items: L[] | undefined) {
     },
     [items]
   );
-  const pagination = usePagination<L, []>(cb, () => `${instanceID}`);
+  const pagination = usePagination<L>(cb, () => `${instanceID}`);
   const pagSrc = useMemo(() => items, [pagination.items]);
 
   return {
