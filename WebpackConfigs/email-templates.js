@@ -3,14 +3,8 @@ process.env.NODE_ENV =
   (process.env.npm_lifecycle_event.includes("start")
     ? "development"
     : "production");
-const Module = require("module").Module;
-function resolveFromMainContext(module) {
-  try {
-    return Module._resolveFilename(module, require.main);
-  } catch (e) {
-    return require.resolve(resolve("node_modules", module));
-  }
-}
+const { resolveFromMainContext } = require("./workarounds");
+require("./monkeypatch");
 const { join, relative, resolve } = require("path");
 const HTMLPlugin = require(resolveFromMainContext("html-webpack-plugin"));
 const {
@@ -307,7 +301,6 @@ async function createConfig(
         loader: require.resolve("style-loader"),
         options: {},
       };
-      l.use.splice(1, 0, join(__dirname, "loaders", "css-var-removal.js"));
     });
   }
   if (process.env.NODE_ENV === "production") {
@@ -369,6 +362,7 @@ module.exports = async function initEmailWebpack() {
     maxParallelTasks,
     templatesFilter,
   } = await loadGenerator();
+  /** @type {import("webpack").Configuration} */
   const config = await createConfig(
     baseConfig,
     mainHtml,

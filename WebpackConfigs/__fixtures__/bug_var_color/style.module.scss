@@ -1,0 +1,28 @@
+.root {
+  > div:nth-child(1) {
+    --var-a: red;
+  }
+  > div:nth-child(2),
+  > div:nth-child(4) {
+    --button-primary-bg-color: var(--var-b);
+    --var-b: green;
+    --var-a: red;
+  }
+  p.paragraph {
+    color: var(--var-b, var(--var-a, blue));
+  }
+  .box,
+  .buttonStyle {
+    background-color: var(--var-b);
+  }
+  .stateClass {
+    background-color: var(--var-a);
+
+    &:not(:hover) {
+      background-color: pink;
+    }
+    &[color="hippie"]:not(:hover) {
+      background-color: var(--var-b);
+    }
+  }
+}

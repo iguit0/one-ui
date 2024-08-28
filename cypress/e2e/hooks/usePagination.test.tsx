@@ -5,9 +5,11 @@ import {
   RefObject,
   useCallback,
   useEffect,
+  useMemo,
+  useState,
 } from "react";
 import useElementFit from "../../../src/hooks/useElementFit";
-import {
+import usePagination, {
   useLocalPagination,
   useContainerPagination,
 } from "../../../src/hooks/usePagination";
@@ -20,7 +22,7 @@ describe("Business rules", () => {
       cy.viewport(1920, 1000);
       const paginationCallback = cy.spy();
       function Wrapper({ amount }: { amount: number }) {
-        const { scrollableRef } = useContainerPagination(paginationCallback);
+        const { scrollableRef } = useContainerPagination(paginationCallback, 2);
         return (
           <div
             ref={scrollableRef}
@@ -262,7 +264,7 @@ describe("Business rules", () => {
        * It should keep all the 20 items and add 4
        * because when we change the page size, we already have 20 items, but each page contain 6
        * so the total of items should be multiple of 6 to fit the available dimensions correctly
-       * 
+       *
        * page 0 = 6
        * page 1 = 12
        * page 2 = 18
@@ -275,6 +277,80 @@ describe("Business rules", () => {
       hasElements(36);
       triggerScroll();
       hasElements(42);
+    });
+  });
+
+  describe("Improvements to pagination interface", () => {
+    it.only("Should change pagination data when changing pagination function", () => {
+      const fakeItems = [
+        ["b", "p"],
+        ["b", "m"],
+        ["b", "m"],
+        ["g", "g"],
+        ["g", "g"],
+        ["r", "p"],
+        /** Duplications */
+        ["b", "p"],
+        ["b", "m"],
+        ["b", "m"],
+        ["g", "g"],
+        ["g", "g"],
+        ["r", "p"],
+        ["b", "p"],
+        ["b", "m"],
+        ["b", "m"],
+        ["g", "g"],
+        ["g", "g"],
+        ["r", "p"],
+      ] as [color: "r" | "g" | "b", size: "p" | "m" | "g"][];
+      const filterByColor = (filterByColor: typeof fakeItems[number][0]) =>
+        fakeItems.filter(([color]) => color === filterByColor);
+      const filterBySize = (filterBySize: typeof fakeItems[number][1]) =>
+        fakeItems.filter(([_color, size]) => size === filterBySize);
+
+      function Cenario() {
+        const [currentFilter, setCurrentFilter] = useState(
+          () => async () => filterByColor("b")
+        );
+        const paginationCb = useCallback<Parameters<typeof usePagination>[0]>(
+          async (page: number, pageSize: number | "all", prevItems = []) => {
+            const items = await currentFilter();
+            const newItems = [
+              ...prevItems,
+              ...(pageSize === "all"
+                ? items
+                : items.slice(page * pageSize, page * pageSize + pageSize)),
+            ];
+            return {
+              finished: newItems.length === items.length,
+              items: newItems,
+              totalItems: items.length,
+            };
+          },
+          [currentFilter]
+        );
+
+        const pagination = usePagination(paginationCb);
+
+        useEffect(() => {
+          pagination.getPage(0, 2);
+        }, [pagination.id()]);
+
+        return (
+          <>
+            {pagination.items?.map((item) => <h1>{JSON.stringify(item)}</h1>) ??
+              "Loading"}
+            <h2>
+              Finished {pagination.totalItems() === pagination.items?.length}
+            </h2>
+            <h2>Total items {pagination.totalItems()}</h2>
+            <h2>Current items {pagination.items?.length}</h2>
+            <button onClick={() => pagination.getNextPage(2)}>Next page</button>
+          </>
+        );
+      }
+
+      cy.mount(<Cenario />);
     });
   });
 });
