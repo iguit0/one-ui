@@ -59,11 +59,18 @@ export type BasicFormFields =
       type: "number";
     };
 
+type DistributeValidatorOverUnion<FormFieldTypes extends { type: any }> =
+  FormFieldTypes extends any
+    ? FormFieldTypes & {
+        validator?: (
+          val: AnswerAction<FormFieldTypes> | undefined
+        ) => boolean | string;
+      }
+    : never;
 export type FormField = {
   optional?: boolean;
   id: string;
-  validator?: (val: AnswerAction<FormField> | undefined) => boolean | string;
-} & (
+} & DistributeValidatorOverUnion<
   | BasicFormFields
   | {
       type: "radio";
@@ -99,16 +106,18 @@ export type FormField = {
       }[];
     }
   | UnresolvableOr<OnepercentUtility.UIElements.FormExtension["fields"], {}>
-);
+>;
 
 export type AnswerByField<F extends Pick<FormField, "type">> =
   F["type"] extends "file"
     ? UploadTask | true
     : F["type"] extends "accept" | "check" | "rawcheck"
     ? boolean[]
+    : F["type"] extends "radio" | "text" | "select" | "number"
+    ? string
     : F["type"] extends keyof UnresolvableOr<
         OnepercentUtility.UIElements.FormExtension["fieldAnswer"],
         {}
       >
     ? OnepercentUtility.UIElements.FormExtension["fieldAnswer"][F["type"]]
-    : string;
+    : unknown;

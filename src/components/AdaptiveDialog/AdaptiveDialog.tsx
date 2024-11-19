@@ -78,10 +78,7 @@ export default function AdaptiveDialog({
                   <MutableHamburgerButton state="closed" size={24} />
                 </button>
               )}
-              <div
-                className={Styles.indicator}
-                onClick={() => setExpanded((p) => !p)}
-              />
+              <div onClick={() => setExpanded((p) => !p)} />
               {children}
             </ScrollAndFocusLock>
           </div>

@@ -4,7 +4,9 @@ import * as AllExamples from "../../../../src/components/FileInput/FileInput.sto
 import OneUIProvider, {
   OneUIContextSpecs,
 } from "../../../../src/context/OneUIProvider";
-import Compact from "../../../../src/components/FileInput/View/Compact/Compact";
+import Compact, {
+  ProgressIndicator,
+} from "../../../../src/components/FileInput/View/Compact/Compact";
 import BigFactory from "../../../../src/components/FileInput/View/BigFactory/BigFactory";
 import FileInput, {
   FileInputProps,
@@ -97,7 +99,7 @@ for (let compName in COMPONENTS_TO_TEST) {
       if (compName !== "Compact") cy.contains(labels.waitingFile.button);
       cy.contains(labels.waitingFile.title);
     });
-    it.only("Should be able to display progress", () => {
+    it("Should be able to display progress", () => {
       cy.viewport(400, 200);
       const chain = cy.mountChain((progress?: number) => {
         cy.log(`Rendering progress ${progress}`);
@@ -124,3 +126,22 @@ for (let compName in COMPONENTS_TO_TEST) {
     });
   });
 }
+
+it("Should be able to show custom icon on progress", () => {
+  cy.mount(
+    <ProgressIndicator
+      defaultIcon={
+        <g transform="translate(13.5, 13.5) scale(0.75)">
+          <path
+            d="M17.5673 14.8269C17.5673 17.3494 15.5225 19.3942 13 19.3942C10.4775 19.3942 8.4327 17.3494 8.4327 14.8269C8.4327 12.3045 10.4775 10.2596 13 10.2596C15.5225 10.2596 17.5673 12.3045 17.5673 14.8269Z"
+            style={{ stroke: "var(--svg-color, #000)" }}
+          />
+          <path
+            d="M1.125 21.125L1.125 9.99306C1.125 8.1223 2.64155 6.60576 4.5123 6.60576C5.79532 6.60576 6.96822 5.88087 7.542 4.7333L8.30968 3.19795C8.9449 1.9275 10.2434 1.12499 11.6638 1.125L14.3362 1.12501C15.7566 1.12502 17.0551 1.92753 17.6903 3.19796L18.458 4.73333C19.0318 5.8809 20.2047 6.60579 21.4877 6.60579C23.3585 6.60579 24.875 8.12233 24.875 9.99309V21.125C24.875 23.1961 23.1961 24.875 21.125 24.875H4.875C2.80393 24.875 1.125 23.1961 1.125 21.125Z"
+            style={{ stroke: "var(--svg-color, #000)" }}
+          />
+        </g>
+      }
+    />
+  );
+});

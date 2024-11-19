@@ -54,11 +54,10 @@ export default function Tabs<O extends string | number>({
   useEffect(() => {
     guideRef.current!.classList.add(Styles.enableTransition);
   }, []);
+  const tabNativeCls = TabType[type] in Styles ? Styles[TabType[type]] : "";
   return (
     <>
-      <div
-        className={`${Styles.container} ${className} ${Styles[TabType[type]]}`}
-      >
+      <div className={`${Styles.container} ${className} ${tabNativeCls}`}>
         {options.map((o) => (
           <p
             ref={selected === o.id ? selectedRef : undefined}

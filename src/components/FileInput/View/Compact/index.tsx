@@ -1,1 +1,1 @@
-export { default } from './Compact';
+export { default, ProgressIndicator } from './Compact';

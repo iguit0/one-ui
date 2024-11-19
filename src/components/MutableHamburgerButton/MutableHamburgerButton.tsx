@@ -22,10 +22,12 @@ export default function MutableHamburgerButton({
     | "hamburger";
   size: number;
 } & React.HTMLProps<HTMLDivElement>) {
+  const stateClass = state in Styles ? Styles[state] : "";
+
   return (
     <div
       {...props}
-      className={`${Styles.container} ${Styles[state]} ${className}`}
+      className={`${Styles.container} ${stateClass} ${className}`}
       style={{ fontSize: `${size}px` }}
     >
       <div />

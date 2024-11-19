@@ -92,6 +92,7 @@ export default function AdaptiveContainer<
     return () => clearTimeout(t);
   }, [children.key, direction]);
   const Wrapper = _Wrapper as any;
+  const directionClass = direction in Styles ? Styles[direction] : "";
 
   return (
     <>
@@ -110,7 +111,7 @@ export default function AdaptiveContainer<
               elementEntering: Styles.fadeInDelayed,
             },
           }}
-          className={`${Styles.resetSection} ${Styles[direction]}`}
+          className={`${Styles.resetSection} ${directionClass}`}
         >
           {children}
         </UncontrolledTransition>

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
  * This hooks is built over the implementation of this loader https://github.com/Muritavo/webpack-microfrontend-scripts#imageresolutionoptimizer
  *
  */
-export default function useAdaptiveImage(): ImageScales {
+function useAdaptiveImage(): ImageScales {
   function ScaleFromCurrentWidth() {
     if ((window as any).PRERENDER) return ImageScales.LARGE;
     const width = window.visualViewport!.width;
@@ -32,3 +32,5 @@ export default function useAdaptiveImage(): ImageScales {
 
   return currentScale;
 }
+
+export default useAdaptiveImage

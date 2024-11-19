@@ -162,7 +162,7 @@ type ContextConfigSpecs = DeepPartial<OneUIContextSpecs>;
 
 const Context = createContext<ContextConfigSpecs>(null as any);
 
-export default function OneUIProvider({
+function OneUIProvider({
   children,
   config,
 }: PropsWithChildren<{ config: ContextConfigSpecs }>) {
@@ -178,6 +178,8 @@ export default function OneUIProvider({
 
   return <Context.Provider value={mergedConfig}>{children}</Context.Provider>;
 }
+
+export default OneUIProvider
 
 function pathToJson(
   path: string,

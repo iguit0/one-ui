@@ -22,10 +22,11 @@ export function _Button(
     "component.button.Component",
     "button" as any
   );
+  const nativeClass = variant in Styles ? Styles[variant] : "";
   return (
     <Component
       ref={ref}
-      className={`${Styles.button} ${Styles[variant]} ${className} ${
+      className={`${Styles.button} ${nativeClass} ${className} ${
         classNameType[variant] || ""
       }`}
       variant={variant}
@@ -35,7 +36,6 @@ export function _Button(
     </Component>
   );
 }
-
 
 /**
  * A simple button that can be customized via the provider

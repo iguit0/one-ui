@@ -31,7 +31,7 @@ export type FileInputProps = {
 /**
  * A component to provide the upload of a file
  **/
-export default function FileInput({ onFile, ...props }: FileInputProps) {
+function FileInput({ onFile, ...props }: FileInputProps) {
   const View = useOneUIView("component.fileInput.View", "FileInput");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -66,3 +66,5 @@ export default function FileInput({ onFile, ...props }: FileInputProps) {
     />
   );
 }
+
+export default FileInput
