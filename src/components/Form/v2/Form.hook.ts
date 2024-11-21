@@ -292,7 +292,7 @@ export function areAllQuestionsAnswered(
               return validationResultExtend.isValid;
             } else
               return question.validator
-                ? !!question.validator(ans(question))
+                ? !!question.validator(ans(question) as any)
                 : !!ans(question);
         }
       })();
@@ -303,7 +303,7 @@ export function areAllQuestionsAnswered(
 }
 
 export const isValidated = (
-  _answer: string | [val: string, isValid: boolean, error?: string],
+    _answer: AnswerByField<{ type: FormField["type"] }>,
   isOptional: boolean,
   validator: ((val: any) => string | boolean) | undefined,
   requiredFieldLabel: string

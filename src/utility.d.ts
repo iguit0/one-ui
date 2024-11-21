@@ -53,6 +53,7 @@ namespace OnepercentUtility {
           isValid: boolean,
           error: string | undefined
         ];
+        date: string
       };
     };
   }
